@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use clap::arg_enum;
 use log::info;
 use rayon::prelude::*;
 use sourmash::signature::Signature;
@@ -11,6 +12,25 @@ use sourmash::sketch::minhash::{
 };
 use sourmash::sketch::Sketch;
 use structopt::StructOpt;
+
+arg_enum! {
+    #[derive(Debug)]
+    enum Encodings {
+        Protein,
+        Hp,
+        Dayhoff,
+    }
+}
+
+impl From<Encodings> for HashFunctions {
+    fn from(e: Encodings) -> HashFunctions {
+        match e {
+            Encodings::Protein => HashFunctions::murmur64_protein,
+            Encodings::Hp => HashFunctions::murmur64_hp,
+            Encodings::Dayhoff => HashFunctions::murmur64_dayhoff,
+        }
+    }
+}
 
 #[derive(StructOpt, Debug)]
 struct Cli {
@@ -30,6 +50,10 @@ struct Cli {
     #[structopt(short = "s", long = "scaled", default_value = "10")]
     scaled: usize,
 
+    /// sequence encoding type
+    #[structopt(short = "e", long = "encoding", possible_values = &Encodings::variants(), case_insensitive = true, default_value = "Protein")]
+    encoding: Encodings,
+
     /// The path for output
     #[structopt(parse(from_os_str), short = "o", long = "output")]
     output: Option<PathBuf>,
@@ -40,6 +64,7 @@ fn subtract<P: AsRef<Path>>(
     siglist: P,
     ksize: u8,
     scaled: usize,
+    hash_function: HashFunctions,
     output: Option<P>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Loading queries");
@@ -48,7 +73,7 @@ fn subtract<P: AsRef<Path>>(
     let template_mh = KmerMinHash::builder()
         .num(0u32)
         .ksize(ksize as u32)
-        .hash_function(HashFunctions::murmur64_protein)
+        .hash_function(hash_function)
         .max_hash(max_hash)
         .build();
     let template = Sketch::MinHash(template_mh);
@@ -131,6 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         opts.siglist,
         opts.ksize,
         opts.scaled,
+        opts.encoding.into(),
         opts.output,
     )?;
 

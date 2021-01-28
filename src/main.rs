@@ -1,12 +1,14 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use log::{error, info};
+use log::info;
 use rayon::prelude::*;
-use sourmash::signature::{Signature, SigsTrait};
-use sourmash::sketch::minhash::{max_hash_for_scaled, HashFunctions, KmerMinHash};
+use sourmash::signature::Signature;
+use sourmash::sketch::minhash::{
+    max_hash_for_scaled, HashFunctions, KmerMinHash, KmerMinHashBTree,
+};
 use sourmash::sketch::Sketch;
 use structopt::StructOpt;
 
@@ -52,11 +54,11 @@ fn subtract<P: AsRef<Path>>(
     let template = Sketch::MinHash(template_mh);
 
     let query_sig = Signature::from_path(query).unwrap();
-    let mut query = None;
+    let mut query: Option<KmerMinHashBTree> = None;
     for sig in &query_sig {
         if let Some(sketch) = sig.select_sketch(&template) {
             if let Sketch::MinHash(mh) = sketch {
-                query = Some(mh.clone());
+                query = Some(mh.clone().into());
             }
         }
     }

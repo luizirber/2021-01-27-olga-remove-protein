@@ -57,6 +57,18 @@ struct Cli {
     /// The path for output
     #[structopt(parse(from_os_str), short = "o", long = "output")]
     output: Option<PathBuf>,
+
+    // Protein k-mers as input
+    #[structopt(short)]
+    protein: bool,
+
+    // Dayhoff k-mers as input
+    #[structopt(short)]
+    dayhoff: bool,
+
+    // HP k-mers as input
+    #[structopt(short)]
+    hp: bool,
 }
 
 fn subtract<P: AsRef<Path>>(
@@ -66,10 +78,22 @@ fn subtract<P: AsRef<Path>>(
     scaled: usize,
     hash_function: HashFunctions,
     output: Option<P>,
+    protein: bool,
+    dayhoff: bool,
+    hp: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     info!("Loading queries");
 
     let max_hash = max_hash_for_scaled(scaled as u64);
+    let hash_function = if protein && (!dayhoff) && (!hp){
+        HashFunctions::murmur64_protein
+    } else if dayhoff && (!protein) && (!hp) {
+        HashFunctions::murmur64_dayhoff
+    } else if hp && (!protein) && (!dayhoff) {
+        HashFunctions::murmur64_hp
+    } else {
+        panic!("No molecule type provided! One of --protein, --dayhoff, --hp must be provided")
+    };
     let template_mh = KmerMinHash::builder()
         .num(0u32)
         .ksize(ksize as u32)
@@ -171,6 +195,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         opts.scaled,
         opts.encoding.into(),
         opts.output,
+        opts.protein,
+        opts.dayhoff,
+        opts.hp
     )?;
 
     Ok(())

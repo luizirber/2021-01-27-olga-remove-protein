@@ -1,0 +1,38 @@
+{
+    "niv": {
+        "branch": "master",
+        "description": "Easy dependency management for Nix projects",
+        "homepage": "https://github.com/nmattia/niv",
+        "owner": "nmattia",
+        "repo": "niv",
+        "rev": "3cd7914b2c4cff48927e11c216dadfab7d903fe5",
+        "sha256": "1agq4nvbhrylf2s77kb4xhh9k7xcwdwggq764k4jgsbs70py8cw3",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/niv/archive/3cd7914b2c4cff48927e11c216dadfab7d903fe5.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixpkgs-unstable",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d0300e77130928eb287e265feacee16250144c3d",
+        "sha256": "0h02p7a8261ibnq09brrlbkgzhdh8sviwlcw8jf1wg6gn1gbsv84",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/d0300e77130928eb287e265feacee16250144c3d.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "rust-overlay": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "a280fbc0aaea3462e86ef122f09f3a8d2c46ff4f",
+        "sha256": "1pmnw0h72c3cg0yw61jfmhk399brkd4armzmzpxzb84893smmqvl",
+        "type": "tarball",
+        "url": "https://github.com/oxalica/rust-overlay/archive/a280fbc0aaea3462e86ef122f09f3a8d2c46ff4f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}

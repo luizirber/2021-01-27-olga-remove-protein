@@ -79,11 +79,11 @@ fn subtract<P: AsRef<Path>>(
     let template = Sketch::MinHash(template_mh);
 
     let query_sig = Signature::from_path(query).unwrap();
-    let mut query: Option<KmerMinHashBTree> = None;
+    let mut query = None;
     for sig in &query_sig {
         if let Some(sketch) = sig.select_sketch(&template) {
             if let Sketch::MinHash(mh) = sketch {
-                query = Some(mh.clone().into());
+                query = Some(mh.clone());
             }
         }
     }
@@ -127,16 +127,21 @@ fn subtract<P: AsRef<Path>>(
             info!("Processed {} sigs", i);
         }
 
-        let mut search_mh = None;
+        let mut search_mh: Option<KmerMinHashBTree> = None;
         let mut search_sig = Signature::from_path(&filename)
             .unwrap_or_else(|_| panic!("Error processing {:?}", filename))
             .swap_remove(0);
         if let Some(sketch) = search_sig.select_sketch(&template) {
             if let Sketch::MinHash(mh) = sketch {
-                search_mh = Some(mh.clone());
+                search_mh = Some(mh.clone().into());
             }
         }
-        let mut search_mh = search_mh.unwrap();
+        let mut search_mh = search_mh.unwrap_or_else(|| {
+            panic!(
+                "Unable to load a sketch matching the provided template: {:?}",
+                &template
+            )
+        });
 
         // remove the hashes
         search_mh.remove_many(&hashes_to_remove).unwrap();
@@ -147,7 +152,7 @@ fn subtract<P: AsRef<Path>>(
 
         let mut out = BufWriter::new(File::create(path).unwrap());
         search_sig.reset_sketches();
-        search_sig.push(Sketch::MinHash(search_mh));
+        search_sig.push(Sketch::LargeMinHash(search_mh));
         serde_json::to_writer(&mut out, &[search_sig]).unwrap();
     });
 

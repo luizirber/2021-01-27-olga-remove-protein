@@ -87,7 +87,13 @@ fn subtract<P: AsRef<Path>>(
             }
         }
     }
-    let query = query.unwrap();
+    let query = query.unwrap_or_else(|| {
+        panic!(
+            "Unable to load a sketch matching the provided template: {:?}",
+            &template
+        )
+    });
+
     info!("Loaded query signature, k={}", ksize);
     let hashes_to_remove = query.mins();
 
@@ -132,8 +138,10 @@ fn subtract<P: AsRef<Path>>(
         }
         let mut search_mh = search_mh.unwrap();
 
+        // remove the hashes
         search_mh.remove_many(&hashes_to_remove).unwrap();
-        // TODO: save to output dir
+
+        // save to output dir
         let mut path = outdir.clone();
         path.push(filename.file_name().unwrap());
 

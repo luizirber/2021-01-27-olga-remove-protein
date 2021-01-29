@@ -43,7 +43,6 @@ fn subtract_protein() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[ignore]
 fn subtract_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("subtract")?;
 
@@ -56,6 +55,7 @@ fn subtract_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
         .arg(file.path())
         .args(&["-k", "42"])
         .args(&["-s", "10"])
+        .args(&["-e", "dayhoff"])
         .args(&["-o", tmp_dir.path().to_str().unwrap()])
         .assert()
         .success();

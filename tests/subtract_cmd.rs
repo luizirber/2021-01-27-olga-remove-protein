@@ -1,8 +1,10 @@
 use std::io::Write;
 use std::process::Command;
 
-use assert_cmd::prelude::*;
 use sourmash::signature::{Signature, SigsTrait};
+
+use assert_cmd::prelude::*;
+use predicates::str::contains;
 use tempfile::{NamedTempFile, TempDir};
 
 #[test]
@@ -67,6 +69,30 @@ fn subtract_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
     assert!(path.exists());
     let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];
     assert_eq!(mh.size(), 0);
+
+    Ok(())
+}
+
+#[test]
+fn subtract_protein_from_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("subtract")?;
+
+    let tmp_dir = TempDir::new()?;
+
+    let mut file = NamedTempFile::new()?;
+    writeln!(file, "data/GCA_001593935.1_ASM159393v1_protein.faa.gz.sig").unwrap();
+
+    cmd.arg("data/bat2-LU__AAACCTGAGCCACGCT.sig")
+        .arg(file.path())
+        .args(&["-k", "42"])
+        .args(&["-s", "10"])
+        .args(&["-e", "dayhoff"])
+        .args(&["-o", tmp_dir.path().to_str().unwrap()])
+        .assert()
+        .failure()
+        .stderr(contains(
+            r#"Unable to load a sketch from "data/GCA_001593935.1_ASM159393v1_protein.faa.gz.sig"#,
+        ));
 
     Ok(())
 }

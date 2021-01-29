@@ -138,8 +138,8 @@ fn subtract<P: AsRef<Path>>(
         }
         let mut search_mh = search_mh.unwrap_or_else(|| {
             panic!(
-                "Unable to load a sketch matching the provided template: {:?}",
-                &template
+                "Unable to load a sketch from {:?} matching the provided template: {:?}",
+                filename, &template
             )
         });
 

@@ -3,10 +3,11 @@ use std::io::{BufRead, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use anyhow::{anyhow, Context, Result};
 use clap::arg_enum;
 use log::info;
 use rayon::prelude::*;
-use sourmash::signature::Signature;
+use sourmash::signature::{Signature, SigsTrait};
 use sourmash::sketch::minhash::{
     max_hash_for_scaled, HashFunctions, KmerMinHash, KmerMinHashBTree,
 };
@@ -66,7 +67,7 @@ fn subtract<P: AsRef<Path>>(
     scaled: usize,
     hash_function: HashFunctions,
     output: Option<P>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     info!("Loading queries");
 
     let max_hash = max_hash_for_scaled(scaled as u64);
@@ -121,42 +122,55 @@ fn subtract<P: AsRef<Path>>(
 
     let processed_sigs = AtomicUsize::new(0);
 
-    search_sigs.par_iter().for_each(|filename| {
+    search_sigs.par_iter().try_for_each(|filename| {
         let i = processed_sigs.fetch_add(1, Ordering::SeqCst);
         if i % 1000 == 0 {
             info!("Processed {} sigs", i);
         }
 
-        let mut search_mh: Option<KmerMinHashBTree> = None;
-        let mut search_sig = Signature::from_path(&filename)
-            .unwrap_or_else(|_| panic!("Error processing {:?}", filename))
-            .swap_remove(0);
-        if let Some(sketch) = search_sig.select_sketch(&template) {
-            if let Sketch::MinHash(mh) = sketch {
-                search_mh = Some(mh.clone().into());
-            }
-        }
-        let mut search_mh = search_mh.unwrap_or_else(|| {
-            panic!(
-                "Unable to load a sketch from {:?} matching the provided template: {:?}",
-                filename, &template
-            )
-        });
+        let mut search_sig = Signature::from_path(&filename)?.swap_remove(0);
 
+        let mut search_mh = select_and_downsample(&search_sig, &template)
+            .with_context(|| format!("Unable to load a sketch from {:?}", &filename,))?;
         // remove the hashes
-        search_mh.remove_many(&hashes_to_remove).unwrap();
+        search_mh.remove_many(&hashes_to_remove)?;
 
         // save to output dir
         let mut path = outdir.clone();
-        path.push(filename.file_name().unwrap());
+        path.push(
+            filename
+                .file_name()
+                .ok_or_else(|| anyhow!("Error converting filename"))?,
+        );
 
-        let mut out = BufWriter::new(File::create(path).unwrap());
+        let mut out = BufWriter::new(File::create(path)?);
         search_sig.reset_sketches();
         search_sig.push(Sketch::LargeMinHash(search_mh));
-        serde_json::to_writer(&mut out, &[search_sig]).unwrap();
-    });
+        serde_json::to_writer(&mut out, &[search_sig])?;
 
-    Ok(())
+        Ok(())
+    })
+}
+
+fn select_and_downsample(search_sig: &Signature, template: &Sketch) -> Result<KmerMinHashBTree> {
+    let mut search_mh: Option<KmerMinHashBTree> = None;
+    if let Sketch::MinHash(template) = template {
+        for sketch in search_sig.sketches() {
+            if let Sketch::MinHash(mh) = sketch {
+                if mh.check_compatible(&template).is_ok() {
+                    search_mh = Some(mh.into());
+                } else if mh.ksize() == template.ksize()
+                    && mh.hash_function() == template.hash_function()
+                    && mh.seed() == template.seed()
+                    && mh.scaled() < template.scaled()
+                {
+                    search_mh = Some(mh.downsample_max_hash(template.max_hash())?.into());
+                }
+            }
+        }
+    }
+
+    search_mh.ok_or_else(|| anyhow!("No sketch matching the provided template: {:?}", &template))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

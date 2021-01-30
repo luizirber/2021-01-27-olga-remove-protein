@@ -96,3 +96,32 @@ fn subtract_protein_from_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn dayhoff_downsample() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("subtract")?;
+
+    let tmp_dir = TempDir::new()?;
+
+    let mut file = NamedTempFile::new()?;
+    writeln!(file, "data/bat2-LU__AAACCTGAGCCACGCT.sig")?;
+
+    cmd.arg("data/bat2-LU__AAACCTGAGCCACGCT-s100.sig")
+        .arg(file.path())
+        .args(&["-k", "42"])
+        .args(&["-s", "100"])
+        .args(&["-e", "dayhoff"])
+        .args(&["-o", tmp_dir.path().to_str().unwrap()])
+        .assert()
+        .success();
+
+    let path = tmp_dir
+        .path()
+        .join("42")
+        .join("bat2-LU__AAACCTGAGCCACGCT.sig");
+    assert!(path.exists());
+    let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];
+    assert_eq!(mh.size(), 0);
+
+    Ok(())
+}

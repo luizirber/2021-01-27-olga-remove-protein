@@ -117,7 +117,6 @@ fn subtract<P: AsRef<Path>>(
         path.push("outputs");
         path
     };
-    outdir.push(format!("{}", ksize));
     std::fs::create_dir_all(&outdir)?;
 
     let processed_sigs = AtomicUsize::new(0);

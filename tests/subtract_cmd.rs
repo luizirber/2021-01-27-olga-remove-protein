@@ -27,7 +27,6 @@ fn subtract_protein() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = tmp_dir
         .path()
-        .join("57")
         .join("GCA_001593925.1_ASM159392v1_protein.faa.gz.sig");
     assert!(path.exists());
     let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];
@@ -35,7 +34,6 @@ fn subtract_protein() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = tmp_dir
         .path()
-        .join("57")
         .join("GCA_001593935.1_ASM159393v1_protein.faa.gz.sig");
     assert!(path.exists());
     let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];

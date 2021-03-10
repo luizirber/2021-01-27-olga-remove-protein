@@ -110,7 +110,7 @@ fn subtract<P: AsRef<Path>>(
         .collect();
     info!("Loaded {} sig paths in siglist", search_sigs.len());
 
-    let mut outdir: PathBuf = if let Some(p) = output {
+    let outdir: PathBuf = if let Some(p) = output {
         p.as_ref().into()
     } else {
         let mut path = PathBuf::new();

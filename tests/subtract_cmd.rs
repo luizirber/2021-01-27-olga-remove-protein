@@ -62,7 +62,6 @@ fn subtract_dayhoff() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = tmp_dir
         .path()
-        .join("42")
         .join("bat2-LU__AAACCTGAGCCACGCT.sig");
     assert!(path.exists());
     let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];
@@ -115,7 +114,6 @@ fn dayhoff_downsample() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = tmp_dir
         .path()
-        .join("42")
         .join("bat2-LU__AAACCTGAGCCACGCT.sig");
     assert!(path.exists());
     let mh = &Signature::from_path(path)?.swap_remove(0).sketches()[0];

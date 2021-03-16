@@ -20,6 +20,7 @@ arg_enum! {
         Protein,
         Hp,
         Dayhoff,
+        Dna,
     }
 }
 
@@ -29,6 +30,7 @@ impl From<Encodings> for HashFunctions {
             Encodings::Protein => HashFunctions::murmur64_protein,
             Encodings::Hp => HashFunctions::murmur64_hp,
             Encodings::Dayhoff => HashFunctions::murmur64_dayhoff,
+            Encodings::Dna => HashFunctions::murmur64_DNA,
         }
     }
 }
@@ -58,6 +60,10 @@ struct Cli {
     /// The path for output
     #[structopt(parse(from_os_str), short = "o", long = "output")]
     output: Option<PathBuf>,
+
+    /// Whether the signatures have k-mer abundance tracking on
+    #[structopt(short, long)]
+    track_abundance: bool,
 }
 
 fn subtract<P: AsRef<Path>>(
@@ -67,15 +73,23 @@ fn subtract<P: AsRef<Path>>(
     scaled: usize,
     hash_function: HashFunctions,
     output: Option<P>,
+    track_abundance: bool,
 ) -> Result<()> {
     info!("Loading queries");
 
     let max_hash = max_hash_for_scaled(scaled as u64);
+    let abunds = if track_abundance { 
+        Some(vec![])
+    } else {
+        None
+    };
+    
     let template_mh = KmerMinHash::builder()
         .num(0u32)
         .ksize(ksize as u32)
         .hash_function(hash_function)
         .max_hash(max_hash)
+        .abunds(abunds)
         .build();
     let template = Sketch::MinHash(template_mh);
 
@@ -110,14 +124,13 @@ fn subtract<P: AsRef<Path>>(
         .collect();
     info!("Loaded {} sig paths in siglist", search_sigs.len());
 
-    let mut outdir: PathBuf = if let Some(p) = output {
+    let outdir: PathBuf = if let Some(p) = output {
         p.as_ref().into()
     } else {
         let mut path = PathBuf::new();
         path.push("outputs");
         path
     };
-    outdir.push(format!("{}", ksize));
     std::fs::create_dir_all(&outdir)?;
 
     let processed_sigs = AtomicUsize::new(0);
@@ -185,6 +198,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         opts.scaled,
         opts.encoding.into(),
         opts.output,
+        opts.track_abundance,
     )?;
 
     Ok(())

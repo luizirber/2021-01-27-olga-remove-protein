@@ -78,22 +78,19 @@ fn subtract<P: AsRef<Path>>(
     info!("Loading queries");
 
     let max_hash = max_hash_for_scaled(scaled as u64);
-    let template_mh = if track_abundance { 
-        KmerMinHash::builder()
-            .num(0u32)
-            .ksize(ksize as u32)
-            .hash_function(hash_function)
-            .max_hash(max_hash)
-            .abunds(Some(vec![]))
-            .build()
-    } else { 
-        KmerMinHash::builder()
-            .num(0u32)
-            .ksize(ksize as u32)
-            .hash_function(hash_function)
-            .max_hash(max_hash)
-            .build()
+    let abunds = if track_abundance { 
+        Some(vec![])
+    } else {
+        None
     };
+    
+    let template_mh = KmerMinHash::builder()
+        .num(0u32)
+        .ksize(ksize as u32)
+        .hash_function(hash_function)
+        .max_hash(max_hash)
+        .abunds(abunds)
+        .build();
     let template = Sketch::MinHash(template_mh);
 
     let query_sig = Signature::from_path(query).unwrap();
